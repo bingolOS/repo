@@ -1,0 +1,32 @@
+# Maintainer: Favilances <favilances@proton.me>
+
+pkgname=bingolos-webapp
+pkgver=0
+pkgrel=1
+pkgdesc="CLI tool to create and manage web app launchers (.desktop) with icons"
+arch=('x86_64')
+url="https://github.com/bingolOS/webapp-installer"
+license=('MIT')
+depends=('sudo')
+makedepends=('git' 'go')
+provides=('bingolos-webapp')
+conflicts=('bingolos-webapp')
+
+source=("webapp-installer::git+$url.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/webapp-installer"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/webapp-installer"
+  export CGO_ENABLED=0
+  go build -trimpath -ldflags "-s -w" -o bingolos-webapp .
+}
+
+package() {
+  cd "$srcdir/webapp-installer"
+  install -Dm755 bingolos-webapp "$pkgdir/usr/bin/bingolos-webapp"
+}

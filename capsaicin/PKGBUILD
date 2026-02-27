@@ -12,8 +12,7 @@ makedepends=('git' 'go')
 
 provides=('capsaicin')
 conflicts=('capsaicin')
-
-source=("scanner::git+https://github.com/abdulhalimaltuntas/scanner.git")
+source=("capsaicin::git+https://github.com/abdulhalimaltuntas/capsaicin.git")
 sha256sums=('SKIP')
 
 pkgver() {

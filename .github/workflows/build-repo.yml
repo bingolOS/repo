@@ -1,0 +1,46 @@
+name: build-pacman-repo
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+
+    steps:
+      - name: Checkout repo (this pacman repo)
+        uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel git go pacman-contrib
+
+      - name: Create non-root user
+        run: |
+          useradd -m build
+          chown -R build:build .
+
+      - name: Build package
+        run: |
+          su build -c "makepkg -s --noconfirm"
+
+      - name: Create pacman repo index
+        run: |
+          mkdir -p public
+          mv *.pkg.tar.zst public/
+          repo-add public/bingolos.db.tar.gz public/*.pkg.tar.zst
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: gh-pages

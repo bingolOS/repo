@@ -14,7 +14,7 @@ jobs:
     container: archlinux:latest
 
     steps:
-      - name: Checkout repo (this pacman repo)
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Install build deps
@@ -28,14 +28,31 @@ jobs:
           useradd -m build
           chown -R build:build .
 
-      - name: Build package
+      - name: Build packages (all dirs containing PKGBUILD)
         run: |
-          su build -c "makepkg -s --noconfirm"
+          set -e
+          shopt -s nullglob
+          built=0
+          for dir in */ ; do
+            if [ -f "${dir}PKGBUILD" ]; then
+              echo "==> Building: ${dir}"
+              cd "${dir}"
+              su build -c "makepkg -s --noconfirm"
+              mv *.pkg.tar.zst ..
+              cd ..
+              built=1
+            fi
+          done
+
+          if [ "$built" -eq 0 ]; then
+            echo "No packages found (no */PKGBUILD)."
+            exit 1
+          fi
 
       - name: Create pacman repo index
         run: |
           mkdir -p public
-          mv *.pkg.tar.zst public/
+          mv *.pkg.tar.zst public/ || true
           repo-add public/bingolos.db.tar.gz public/*.pkg.tar.zst
 
       - name: Deploy to gh-pages

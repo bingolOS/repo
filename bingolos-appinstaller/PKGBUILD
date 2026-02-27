@@ -1,0 +1,28 @@
+pkgname=bingolos-appinstaller
+pkgver=0
+pkgrel=1
+pkgdesc="BingolOS App Installer (fzf tabanli konsol paket yoneticisi)"
+arch=('x86_64')
+url="https://github.com/bingolOS/app-installer"
+license=('CUSTOM') 
+depends=('fzf' 'pacman' 'sudo')
+makedepends=('git' 'go')
+
+source=("git+$url.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/bingolos-appinstaller"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/bingolos-appinstaller"
+  export CGO_ENABLED=0
+  go build -trimpath -ldflags "-s -w" -o bingolos-appinstaller .
+}
+
+package() {
+  cd "$srcdir/bingolos-appinstaller"
+  install -Dm755 bingolos-appinstaller "$pkgdir/usr/bin/bingolos-appinstaller"
+}

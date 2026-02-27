@@ -1,27 +1,8 @@
-name: build-pacman-repo
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    container: archlinux:latest
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
       - name: Install build deps
         run: |
           pacman -Sy --noconfirm archlinux-keyring
           pacman -Syu --noconfirm
-          pacman -S --noconfirm base-devel git go pacman-contrib
+          pacman -S --noconfirm base-devel git go pacman-contrib fzf sudo
 
       - name: Create non-root user
         run: |
@@ -33,11 +14,15 @@ jobs:
           set -e
           shopt -s nullglob
           built=0
+
           for dir in */ ; do
             if [ -f "${dir}PKGBUILD" ]; then
               echo "==> Building: ${dir}"
               cd "${dir}"
-              su build -c "makepkg -s --noconfirm"
+
+              # IMPORTANT: no "-s" here (syncdeps triggers sudo prompt)
+              su build -c "makepkg --noconfirm"
+
               mv *.pkg.tar.zst ..
               cd ..
               built=1
@@ -48,16 +33,3 @@ jobs:
             echo "No packages found (no */PKGBUILD)."
             exit 1
           fi
-
-      - name: Create pacman repo index
-        run: |
-          mkdir -p public
-          mv *.pkg.tar.zst public/ || true
-          repo-add public/bingolos.db.tar.gz public/*.pkg.tar.zst
-
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          publish_branch: gh-pages

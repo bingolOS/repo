@@ -1,0 +1,33 @@
+# Maintainer: Favilances <favilances@proton.me>
+
+pkgname=capsaicin
+pkgver=0.1
+pkgrel=1
+pkgdesc="Fast web scanner written in Go"
+arch=('x86_64')
+url="https://github.com/abdulhalimaltuntas/scanner"
+license=('MIT')
+depends=()
+makedepends=('git' 'go')
+
+provides=('capsaicin')
+conflicts=('capsaicin')
+
+source=("scanner::git+https://github.com/abdulhalimaltuntas/scanner.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/scanner"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/scanner"
+  export CGO_ENABLED=0
+  go build -trimpath -ldflags "-s -w" -o capsaicin ./cmd/capsaicin
+}
+
+package() {
+  cd "$srcdir/scanner"
+  install -Dm755 capsaicin "$pkgdir/usr/bin/capsaicin"
+}
